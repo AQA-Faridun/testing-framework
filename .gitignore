@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+
+# IDE
+.idea/
+.vscode/
+.DS_Store
+
+# Env
+.env
+
+# Node artefacts left by external MCP tooling (TestSprite, npx, etc.)
+node_modules/
+package.json
+package-lock.json
+
+# Local notes, not part of the repo
+how to do it/
+
+# Claude Code local state
+.claude/
+**/CLAUDE.md
+
+# SSH keys generated locally
+id_*
