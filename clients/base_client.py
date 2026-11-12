@@ -1,20 +1,27 @@
 """
 Base HTTP client.
 
-Wraps httpx.Client with common headers and lifecycle management.
+Wraps httpx.Client with common headers, lifecycle management and Allure reporting.
 All microservice clients inherit from this class.
 """
 
 import logging
+import time
+from typing import Any, ClassVar, Self
 
+import allure
 import httpx
+
+from config import get_settings
+from utils.attachments import attach_http_exchange
 
 logger = logging.getLogger(__name__)
 
 
 class BaseClient:
     """
-    Session-scoped HTTP client with project-wide default headers.
+    Session-scoped HTTP client with project-wide default headers. Every request becomes an Allure
+    step with the request/response attached (Allure 3 HTTP viewer + curl).
 
     Usage:
         client = SomeClient()
@@ -25,13 +32,13 @@ class BaseClient:
         with SomeClient() as client:
             response = client._get("/some/path")
 
-    A subclass sets its own base path in __init__ (e.g. self.url = f"{self.DEFAULT_BASE_URL}/api/v1/users").
+    A subclass sets its own base path in __init__ (e.g. self.url = "/api/v1/users"). Relative paths
+    are resolved against API_BASE_URL from config.Settings.
     """
 
-    DEFAULT_BASE_URL: str = "localhost"
     INVALID_TOKEN: str = "eyJhbGciOiJIUzI1NiJ9.invalid.signature"
 
-    DEFAULT_HEADERS: dict[str, str] = {
+    DEFAULT_HEADERS: ClassVar[dict[str, str]] = {
         "Accept": "application/json, text/plain, */*",
         "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:147.0) Gecko/20100101 Firefox/147.0",
     }
@@ -55,55 +62,86 @@ class BaseClient:
                 reason = response.text
             logger.warning("%s → %s | %s", req, status, reason)
 
-    def __init__(self, extra_headers: dict = None, timeout: float = 60.0, cookies: httpx.Cookies | None = None):
+    def __init__(
+        self,
+        extra_headers: dict[str, str] | None = None,
+        timeout: float | None = None,
+        cookies: httpx.Cookies | None = None,
+    ) -> None:
+        """
+        Args:
+            extra_headers (dict[str, str] | None): headers added to DEFAULT_HEADERS for every request.
+            timeout (float | None): request timeout in seconds; API_TIMEOUT_S from settings when None.
+            cookies (httpx.Cookies | None): cookies to start the session with.
+        """
+        settings = get_settings()
         self._http: httpx.Client = httpx.Client(
-            base_url = self.DEFAULT_BASE_URL,
-            headers = {**self.DEFAULT_HEADERS, **(extra_headers or {})},
-            timeout = timeout,
-            follow_redirects = True,
-            cookies = cookies or {},
-            event_hooks = {"response": [self._log_response]},
+            base_url=settings.api_base_url,
+            headers={**self.DEFAULT_HEADERS, **(extra_headers or {})},
+            timeout=settings.api_timeout_s if timeout is None else timeout,
+            follow_redirects=True,
+            cookies=cookies,
+            event_hooks={"response": [self._log_response]},
         )
 
     # ------------------------------------------------------------------
     # Context manager
     # ------------------------------------------------------------------
 
-    def __enter__(self):
+    def __enter__(self) -> Self:
         return self
 
-    def __exit__(self, *_):
+    def __exit__(self, *_: object) -> None:
         self.close()
 
-    def close(self):
+    def close(self) -> None:
         self._http.close()
 
     # ------------------------------------------------------------------
     # Low-level request helpers (used by subclasses)
     # ------------------------------------------------------------------
 
+    def _request(self, method: str, path: str, **kwargs: Any) -> httpx.Response:
+        """
+        Send a request inside an Allure step and attach the HTTP exchange to that step.
+
+        The typed helpers below all go through it. Call it directly only for what they can't send,
+        e.g. a malformed raw body (content=b"...") in a negative test — it still gets reported.
+
+        Args:
+            method (str): HTTP method, e.g. "GET".
+            path (str): path relative to the base URL, or a full URL.
+            **kwargs (Any): passed to httpx.Client.request as is.
+        """
+        with allure.step(f"{method} {path}"):
+            started_at_ms = int(time.time() * 1000)
+            response = self._http.request(method, path, **kwargs)
+            attach_http_exchange(response, started_at_ms)
+            return response
+
     def _get(
         self,
         path: str,
         *,
-        params: dict = None,
-        headers: dict = None,
-        cookies: dict = None,
+        params: dict[str, Any] | None = None,
+        headers: dict[str, str] | None = None,
+        cookies: dict[str, str] | None = None,
     ) -> httpx.Response:
-        return self._http.get(path, params=params, headers=headers, cookies=cookies)
+        return self._request("GET", path, params=params, headers=headers, cookies=cookies)
 
     def _post(
         self,
         path: str,
         *,
-        params: dict = None,
-        json: dict = None,
-        headers: dict = None,
-        cookies: dict = None,
-        files=None,
-        data: dict = None,
+        params: dict[str, Any] | None = None,
+        json: Any = None,
+        headers: dict[str, str] | None = None,
+        cookies: dict[str, str] | None = None,
+        files: Any = None,
+        data: dict[str, Any] | None = None,
     ) -> httpx.Response:
-        return self._http.post(
+        return self._request(
+            "POST",
             path,
             params=params,
             json=json,
@@ -117,13 +155,14 @@ class BaseClient:
         self,
         path: str,
         *,
-        json: dict = None,
-        headers: dict = None,
-        cookies=None,
-        files=None,
-        data: dict = None,
+        json: Any = None,
+        headers: dict[str, str] | None = None,
+        cookies: dict[str, str] | None = None,
+        files: Any = None,
+        data: dict[str, Any] | None = None,
     ) -> httpx.Response:
-        return self._http.put(
+        return self._request(
+            "PUT",
             path,
             json=json,
             headers=headers,
@@ -136,13 +175,14 @@ class BaseClient:
         self,
         path: str,
         *,
-        json: dict = None,
-        headers: dict = None,
-        cookies=None,
-        files=None,
-        data: dict = None,
+        json: Any = None,
+        headers: dict[str, str] | None = None,
+        cookies: dict[str, str] | None = None,
+        files: Any = None,
+        data: dict[str, Any] | None = None,
     ) -> httpx.Response:
-        return self._http.patch(
+        return self._request(
+            "PATCH",
             path,
             json=json,
             headers=headers,
@@ -155,10 +195,10 @@ class BaseClient:
         self,
         path: str,
         *,
-        headers: dict = None,
-        cookies=None,
+        headers: dict[str, str] | None = None,
+        cookies: dict[str, str] | None = None,
     ) -> httpx.Response:
-        return self._http.delete(path, headers=headers, cookies=cookies)
+        return self._request("DELETE", path, headers=headers, cookies=cookies)
 
     # ------------------------------------------------------------------
     # Header builders
@@ -175,10 +215,8 @@ class BaseClient:
     @staticmethod
     def getting_error_message(response: httpx.Response) -> str:
         """Returns an error message from the response."""
-        if "reason" in response.json():
-            return response.json()["reason"]
-        elif "error" in response.json():
-            return response.json()["error"]
-        elif "message" in response.json():
-            return response.json()["message"]
+        body = response.json()
+        for key in ("reason", "error", "message"):
+            if key in body:
+                return str(body[key])
         return response.text
