@@ -42,6 +42,9 @@ addopts = [
     "--strict-config",
     "--alluredir=allure-results",
     "--clean-alluredir",
+    # Demo tests fail on purpose; an explicit -m on the command line overrides this.
+    "-m",
+    "not demo",
 ]
 log_cli = true
 log_cli_level = "INFO"
@@ -57,6 +60,7 @@ markers = [
     "web_negative: all negative Web UI tests across all sections",
     "mobile_positive: all positive Mobile tests across all sections",
     "mobile_negative: all negative Mobile tests across all sections",
+    "demo: demo tests that show every Allure status, some fail on purpose (excluded by default)",
 ]
 
 [tool.ruff]
