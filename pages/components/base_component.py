@@ -1,11 +1,7 @@
-from typing import Generic, Optional, TypeVar
-
 from playwright.sync_api import Page
 
-TParent = TypeVar("TParent")
 
-
-class BaseComponent(Generic[TParent]):
+class BaseComponent[TParent]:
     """
     Base class for reusable UI components (a sidebar, a toolbar, etc.) embedded into different
     Page objects. Unlike BasePage, it doesn't open or reload the page — it only holds page for
@@ -18,6 +14,6 @@ class BaseComponent(Generic[TParent]):
     that don't need that return value can leave parent unused — it defaults to None.
     """
 
-    def __init__(self, page: Page, parent: Optional[TParent] = None):
+    def __init__(self, page: Page, parent: TParent | None = None) -> None:
         self.page = page
         self.parent = parent
