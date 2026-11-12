@@ -2,6 +2,8 @@
 __pycache__/
 *.py[cod]
 .pytest_cache/
+.mypy_cache/
+.ruff_cache/
 .venv/
 venv/
 
@@ -13,13 +15,19 @@ venv/
 # Env
 .env
 
-# Node artefacts left by external MCP tooling (TestSprite, npx, etc.)
+# Node (Allure 3 CLI; package.json and package-lock.json are tracked)
 node_modules/
-package.json
-package-lock.json
+
+# Allure and test artifacts
+allure-results/
+allure-report/
+.allure/
+test-results/
+docs/run-summary.md
 
 # Local notes, not part of the repo
 how to do it/
+HOW_TO_WORK_SUMMARY.md
 
 # Claude Code local state
 .claude/

@@ -1,0 +1,8 @@
+{
+  "name": "testing-framework",
+  "private": true,
+  "description": "Allure Report 3 CLI for the Python test framework",
+  "devDependencies": {
+    "allure": "3.33.0"
+  }
+}
