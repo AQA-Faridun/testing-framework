@@ -43,7 +43,8 @@ export default defineConfig({
     rules: [
       {
         name: "Known issues (tracked in the bug tracker)",
-        matchers: { message: /^[A-Z]+-\d+/ },
+        // allure-pytest puts the exception name first: "AssertionError: BUG-123: ...".
+        matchers: { message: /^(?:[\w.]+: )?[A-Z][A-Z0-9]+-\d+:/ },
         groupBy: ["severity"],
       },
       {
@@ -84,7 +85,7 @@ export default defineConfig({
       tracker: { nameTemplate: "%s", urlTemplate: "https://tracker.example.com/browse/%s" },
     },
     rules: [
-      // { resolution: "issue", issue: { id: "BUG-123", type: "tracker" }, messageRegexp: "^BUG-123", comment: "..." },
+      // { resolution: "issue", issue: { id: "BUG-123", type: "tracker" }, messageRegexp: "BUG-123:", comment: "..." },
       // { resolution: "muted", messageRegexp: "ConnectError", comment: "External dependency is down" },
     ],
   },
