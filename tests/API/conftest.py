@@ -3,6 +3,7 @@ Shared pytest fixtures/helpers for tests under tests/API/, used by two or more s
 directories. Fixtures/helpers needed by only one service belong in that service's own
 conftest.py instead.
 """
+
 import random
 from pathlib import Path
 
@@ -24,10 +25,7 @@ def pick_random_document() -> tuple[str, bytes, str]:
     pass as files={...} when uploading a document.
     """
     files_dir = Path("./data/files")
-    doc_files = [
-        f for f in files_dir.iterdir()
-        if f.is_file() and f.suffix.lower() in _DOCUMENT_MIME_TYPES
-    ]
+    doc_files = [f for f in files_dir.iterdir() if f.is_file() and f.suffix.lower() in _DOCUMENT_MIME_TYPES]
     if not doc_files:
         raise FileNotFoundError(f"No document files found in {files_dir}")
 
@@ -48,10 +46,7 @@ def pick_random_image() -> tuple[str, bytes, str]:
     pick_random_document(), excludes .pdf, for endpoints that expect an actual image.
     """
     files_dir = Path("./data/files")
-    image_files = [
-        f for f in files_dir.iterdir()
-        if f.is_file() and f.suffix.lower() in _IMAGE_MIME_TYPES
-    ]
+    image_files = [f for f in files_dir.iterdir() if f.is_file() and f.suffix.lower() in _IMAGE_MIME_TYPES]
     if not image_files:
         raise FileNotFoundError(f"No image files found in {files_dir}")
 

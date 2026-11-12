@@ -1,8 +1,9 @@
 from mimesis.providers import BaseProvider
 
+
 class EmailProvider(BaseProvider):
     class Meta:
-        name = 'test_email'
+        name = "test_email"
 
     def get_random_value(self) -> str:
         """
@@ -13,12 +14,12 @@ class EmailProvider(BaseProvider):
 
 class PasswordProvider(BaseProvider):
     class Meta:
-        name = 'test_password'
+        name = "test_password"
 
-    _UPPERCASE: str = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-    _LOWERCASE: str = 'abcdefghijklmnopqrstuvwxyz'
-    _DIGITS: str = '0123456789'
-    _SPECIAL: str = '!.,-_@#$%^&'
+    _UPPERCASE: str = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    _LOWERCASE: str = "abcdefghijklmnopqrstuvwxyz"
+    _DIGITS: str = "0123456789"
+    _SPECIAL: str = "!.,-_@#$%^&"
     _ALL: str = _UPPERCASE + _LOWERCASE + _DIGITS + _SPECIAL
 
     def _is_valid(self, password: str) -> bool:
@@ -40,6 +41,6 @@ class PasswordProvider(BaseProvider):
         while True:
             length: int = self.random.randint(min_len, max_len)
             chars: list[str] = [self.random.choice(self._ALL) for _ in range(length)]
-            password: str = ''.join(chars)
+            password: str = "".join(chars)
             if self._is_valid(password):
                 return password
