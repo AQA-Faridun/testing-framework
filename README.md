@@ -16,6 +16,8 @@ allure-pytest · Allure 3 (Node.js) · ruff · mypy.
   components).
 - **`tests/API/`, `tests/Web/`, `tests/Mobile/`** — the pytest suite, one directory per
   service/area.
+- **`tests/demo/`** — demo tests that show every Allure status, some fail on purpose. Excluded
+  from regular runs; see `tests/demo/HOW_TO_GENERATE_REPORT_FOR_TESTS.md`.
 - **`data/`** — Factory/Builder layer for generating test entities, shared dataclass models, and
   custom data providers.
 - **`config.py`** — run settings from env vars / `.env`.
@@ -81,6 +83,8 @@ uv run pytest -m api_negative
 Config lives in `pyproject.toml`. Custom markers (`--strict-markers` is on):
 
 - `smoke`, `regression` — reserved for future use.
+- `demo` — demo tests, excluded by default (`-m "not demo"` in `addopts`). Run them with
+  `make mark-open M=demo`.
 - `api_positive` / `api_negative`, `web_positive` / `web_negative`, `mobile_positive` /
   `mobile_negative` — universal pairs per area.
 - Per-service `api_<service>_positive` / `api_<service>_negative` pairs — add a new pair whenever
@@ -130,6 +134,7 @@ tests/
     conftest.py                # fixtures used only by this service's tests
   Web/conftest.py              # Playwright context with Allure artifacts
   Web/<area>/  Mobile/<area>/  # same shape as API
+  demo/                        # demo tests for the Allure report (marker demo)
 ```
 
 Fixtures shared by two or more services live in the nearest common `conftest.py`; anything
